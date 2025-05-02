@@ -1,0 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+/* Main Layout */
+:root {
+    --primary-color: #4a90e2;
+    --primary-hover: #357abd;
+    --background-color: #f5f5f5;
+    --card-background: rgb(38, 39, 48);
+    --text-color: #fff;
+    --text-secondary: #666666;
+    --border-color: rgba(250, 250, 250, 0.2);
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --error-color: #f44336;
+    --shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: var(--card-background);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.sidebar .sidebar-content {
+    background-color: var(--card-background);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.sidebar .sidebar-content .sidebar-section {
+    margin-bottom: 1.5rem;
+}
+
+/* Cards and Containers */
+.stMetric {
+    background-color: var(--card-background) !important;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    color: var(--text-color) !important;
+}
+
+.stMetric:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.stMetric .label {
+    color: var(--text-secondary) !important;
+    font-size: 0.9rem;
+}
+
+.stMetric .value {
+    color: var(--text-color) !important;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.stExpander {
+    background-color: var(--card-background);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+}
+
+/* Tables */
+.stDataFrame {
+    background-color: var(--card-background) !important;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.stDataFrame table {
+    color: var(--text-color) !important;
+}
+
+.stDataFrame th {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.stDataFrame td {
+    color: var(--text-color) !important;
+}
+
+/* Forms */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > div {
+    background-color: var(--card-background) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.stButton > button {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 4px !important;
+    transition: var(--transition) !important;
+}
+
+.stButton > button:hover {
+    background-color: var(--primary-hover) !important;
+}
+
+.st-ff { padding: 5px; }
+
+/* Tabs */
+.stTabs {
+    background-color: var(--card-background);
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+    padding: 10px;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    background-color: var(--card-background) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    color: var(--text-secondary) !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--primary-color) !important;
+}
+
+/* Alerts and Messages */
+.stAlert {
+    border-radius: 8px !important;
+    padding: 1rem !important;
+}
+
+.stSuccess {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.stWarning {
+    background-color: var(--warning-color);
+    color: var(--text-color);
+}
+
+.stError {
+    background-color: var(--error-color);
+    color: white;
+}
+
+/* Loading Spinner */
+.stSpinner > div {
+    border-color: var(--primary-color) !important;
+}
+
+/* Progress bar */
+.progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: var(--background-color);
+    z-index: 1000;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stMetric {
+        margin-bottom: 1rem;
+    }
+    
+    .stDataFrame {
+        overflow-x: auto;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.5rem;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.stMetric, .stTable, .stExpander {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
+.p-1 { padding: 1rem; }
+.p-2 { padding: 2rem; } 
