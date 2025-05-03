@@ -3,12 +3,16 @@ from .base import BaseGateway, GatewayConfig
 from .aws import AWSGateway
 from .wso2 import WSO2Gateway
 from .kong import KongGateway
+from .gravitee import GraviteeGateway
+from .tyk import TykGateway # Import the new gateway
 
 class GatewayFactory:
     _gateways: Dict[str, Type[BaseGateway]] = {
         'aws': AWSGateway,
         'wso2': WSO2Gateway,
         'kong': KongGateway,
+        'gravitee': GraviteeGateway,
+        'tyk': TykGateway, # Add Tyk here
         # Add other gateway implementations here
     }
 
@@ -28,4 +32,4 @@ class GatewayFactory:
     @classmethod
     def get_available_gateways(cls) -> List[str]:
         """Get list of available gateway types"""
-        return list(cls._gateways.keys()) 
+        return list(cls._gateways.keys())

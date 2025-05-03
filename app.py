@@ -226,8 +226,39 @@ elif page == "Gateway Management":
             additional_config = {
                 'api_key': api_key
             }
+        elif gateway_type == 'gravitee': # Add this block
+            st.subheader("Gravitee Configuration")
+            org_id = st.text_input("Organization ID", value="DEFAULT")
+            env_id = st.text_input("Environment ID", value="DEFAULT")
+            # Add fields for authentication, e.g., Basic Auth or Token
+            auth_type = st.selectbox("Authentication Type", ["Basic Auth", "Bearer Token"])
+            if auth_type == "Basic Auth":
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+                additional_config = {
+                    'organization_id': org_id,
+                    'environment_id': env_id,
+                    'auth_type': 'basic',
+                    'username': username,
+                    'password': password
+                }
+            else: # Bearer Token
+                token = st.text_input("Bearer Token", type="password")
+                additional_config = {
+                    'organization_id': org_id,
+                    'environment_id': env_id,
+                    'auth_type': 'bearer',
+                    'token': token
+                }
+        elif gateway_type == 'tyk': # Add this block
+            st.subheader("Tyk Configuration")
+            tyk_auth_secret = st.text_input("Tyk Authorization Secret (x-tyk-authorization)", type="password")
+            additional_config = {
+                'tyk_auth_secret': tyk_auth_secret
+            }
         else:
-            api_key = st.text_input("API Key", type="password")
+            # Default or other gateways (Consider removing this generic 'else' if all types are explicitly handled)
+            api_key = st.text_input("API Key / Secret", type="password")
             additional_config = {
                 'api_key': api_key
             }
@@ -769,10 +800,105 @@ elif page == "API Management":
                             # Add more analytics visualizations here
                         else:
                             st.info("No analytics data available")
-            else:
-                st.write("Manage your APIs across different gateways.")
-                st.subheader("API List")
-                st.write("No APIs configured yet.")
+            elif gateway_type == 'gravitee': # Add this block
+                st.subheader("Gravitee API Management")
+                # API selection
+                selected_api = st.selectbox(
+                    "Select API",
+                    [api.get('name', api.get('id', 'Unknown')) for api in apis] # Adjust based on Gravitee API structure
+                )
+
+                if selected_api:
+                    # Find the selected API details (adjust key based on Gravitee response)
+                    api_details = next((api for api in apis if api.get('name', api.get('id')) == selected_api), None)
+
+                    if api_details:
+                        st.subheader(f"Details for {selected_api}")
+                        st.json(api_details)
+
+                        # Add tabs for Overview, Plans, Policies, Analytics etc. based on Gravitee features
+                        tab1, tab2 = st.tabs(["Overview", "Analytics"])
+
+                        with tab1:
+                            st.write("API Overview details here...")
+                            # Add forms for updating/deleting the API
+
+                        with tab2:
+                            st.write("API Analytics/Metrics here...")
+                            # Fetch and display metrics using gateway.get_api_metrics(api_details['id'])
+
+                # Add form/button to create a new Gravitee API
+                with st.expander("Create New Gravitee API"):
+                    with st.form("new_gravitee_api"):
+                        st.write("Form fields for creating a Gravitee API...")
+                        # Add inputs for name, context path, version, endpoints etc.
+                        submitted = st.form_submit_button("Create API")
+                        if submitted:
+                            # Construct api_config dict from form inputs
+                            # result = gateway.create_api(api_config)
+                            # Show success/error message
+                            pass # Placeholder
+
+            elif gateway_type == 'tyk': # Add this block
+                st.subheader("Tyk API Management")
+
+                # API selection
+                # Adjust the key based on how Tyk returns the API name in the list
+                selected_api_name = st.selectbox(
+                    "Select API",
+                    [api.get('name', api.get('api_id', 'Unknown')) for api in apis]
+                )
+
+                if selected_api_name:
+                    # Find the selected API details (adjust key based on Tyk response)
+                    api_details = next((api for api in apis if api.get('name', api.get('api_id')) == selected_api_name), None)
+
+                    if api_details:
+                        # Fetch full details which might include metrics/config
+                        full_api_details = gateway.get_api_metrics(api_details['api_id'])
+
+                        st.subheader(f"Details for {selected_api_name}")
+                        st.json(full_api_details if full_api_details else api_details) # Show full details if available
+
+                        # Add tabs based on Tyk API Definition structure (e.g., Versioning, Middleware, Analytics)
+                        tab1, tab2 = st.tabs(["Overview", "Definition"])
+
+                        with tab1:
+                            st.write("API Overview details here...")
+                            # Display key info like listen_path, target_url, auth type etc.
+                            st.write(f"**Listen Path:** {full_api_details.get('proxy', {}).get('listen_path', 'N/A')}")
+                            st.write(f"**Target URL:** {full_api_details.get('proxy', {}).get('target_url', 'N/A')}")
+                            auth_type = "Enabled" if full_api_details.get('use_keyless') is False else "Keyless"
+                            st.write(f"**Authentication:** {auth_type}")
+                            # Add forms for updating/deleting the API
+
+                        with tab2:
+                            st.write("Full API Definition:")
+                            st.json(full_api_details)
+
+
+                # Add form/button to create a new Tyk API
+                with st.expander("Create New Tyk API"):
+                     with st.form("new_tyk_api"):
+                         st.write("Define Tyk API (JSON)")
+                         # Tyk API definitions are complex JSON objects
+                         api_definition_json = st.text_area("API Definition (JSON)", height=400, placeholder='{\n  "name": "MyTykAPI",\n  "api_id": "mytykapi",\n  "org_id": "1",\n  "use_keyless": true,\n  "proxy": {\n    "listen_path": "/mytykapi/",\n    "target_url": "http://httpbin.org",\n    "strip_listen_path": true\n  },\n  "version_data": {\n    "not_versioned": true,\n    "versions": {\n      "Default": {\n        "name": "Default",\n        "use_extended_paths": true\n      }\n    }\n  }\n}')
+                         submitted = st.form_submit_button("Create API")
+                         if submitted:
+                             try:
+                                 api_config = json.loads(api_definition_json)
+                                 result = gateway.create_api(api_config)
+                                 if result and not result.get('error'):
+                                     st.success(f"Tyk API created successfully! ID: {result.get('Meta')}")
+                                     st.experimental_rerun()
+                                 else:
+                                     st.error(f"Failed to create Tyk API: {result.get('error', 'Unknown error')}")
+                                     if result.get('details'):
+                                         st.json(result.get('details'))
+                             except json.JSONDecodeError:
+                                 st.error("Invalid JSON definition provided.")
+                             except Exception as e:
+                                 st.error(f"An error occurred: {str(e)}")
 
 elif page == "Settings":
     st.header("Settings")
@@ -819,4 +945,4 @@ if st.sidebar.checkbox("Show Performance Metrics", value=False):
     st.sidebar.write("Performance Metrics")
     st.sidebar.metric("Memory Usage", f"{psutil.Process().memory_info().rss / 1024 / 1024:.2f} MB")
     st.sidebar.metric("CPU Usage", f"{psutil.Process().cpu_percent()}%")
-    st.sidebar.metric("Response Time", f"{time.time() - st.session_state.get('start_time', time.time()):.2f}s") 
+    st.sidebar.metric("Response Time", f"{time.time() - st.session_state.get('start_time', time.time()):.2f}s")
