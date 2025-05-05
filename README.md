@@ -1,6 +1,6 @@
 # 🌐 GatewayCTRL
 
-Universal Control Plane for API Gateways. A comprehensive API Gateway management product providing a central control plane for provisioning, managing, and monitoring multiple API gateways across different vendors.
+Universal Control Plane for API Gateways. An API Gateway management project providing a central control plane for provisioning, managing, and monitoring multiple API gateways across different vendors.
 
 ## ✨ Features
 
