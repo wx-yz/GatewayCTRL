@@ -30,6 +30,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# --- Icon Mapping ---
+GATEWAY_ICONS = {
+    "aws": "static/aws.png",
+    "wso2": "static/wso2.png",
+    "kong": "static/kong.png",
+    "gravitee": "static/gravitee.png",
+    "tyk": "static/tyk.png",
+    # Add other gateways here if needed
+}
+
+# Helper function to get icon path or return None
+def get_gateway_icon(gateway_type):
+    return GATEWAY_ICONS.get(gateway_type)
+
 # Create a placeholder for loading state
 loading_placeholder = st.empty()
 
@@ -115,7 +129,7 @@ inject_css()
 inject_js()
 
 # Sidebar navigation with icons
-st.sidebar.title("API Gateway Control Plane")
+st.sidebar.image("static/logo.png")
 page = st.sidebar.radio(
     "Navigation",
     [
@@ -128,7 +142,7 @@ page = st.sidebar.radio(
 )[0]
 
 # Main content area
-st.title("API Gateway Control Plane")
+st.title("GW Control Plane")
 
 if page == "Dashboard":
     st.header("Dashboard")
@@ -158,17 +172,27 @@ if page == "Dashboard":
     st.subheader("Configured Gateways")
     if st.session_state.gateways:
         for gateway in st.session_state.gateways:
-            with st.expander(f"{gateway['name']} ({gateway['type']})"):
+            icon_path = get_gateway_icon(gateway['type'])
+            # Use Markdown in the expander label
+            with st.expander(f"![](/app/{icon_path}) **{gateway['name']}**", expanded=False):
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.json(gateway['config'].dict())
+                    # Display config safely
+                    config_dict = gateway['config'].dict()
+                    # Mask sensitive fields if necessary before displaying
+                    if 'password' in config_dict.get('additional_config', {}):
+                        config_dict['additional_config']['password'] = "****"
+                    if 'tyk_auth_secret' in config_dict.get('additional_config', {}):
+                        config_dict['additional_config']['tyk_auth_secret'] = "****"
+                    # Add other sensitive fields as needed
+                    st.json(config_dict)
                 with col2:
                     try:
                         gateway_instance = GatewayFactory.create_gateway(gateway['type'], gateway['config'])
                         apis = gateway_instance.get_apis()
                         st.metric("APIs", len(apis))
                     except Exception as e:
-                        logger.error(f"Error getting APIs for gateway {gateway['name']}: {str(e)}", exc_info=True)
+                        logger.error(f"Error getting APIs for gateway {gateway['name']} in dashboard: {str(e)}", exc_info=True)
                         st.error("Failed to get API count")
     else:
         st.info("No gateways configured yet.")
@@ -180,15 +204,33 @@ elif page == "Gateway Management":
     if st.session_state.gateways:
         st.subheader("Existing Gateways")
         for gateway in st.session_state.gateways:
-            with st.expander(f"{gateway['name']} ({gateway['type']})"):
+            icon_path = get_gateway_icon(gateway['type'])
+            # Use Markdown in the expander label
+            with st.expander(f"![](/app/{icon_path}) **{gateway['name']}**", expanded=False):
                 col1, col2 = st.columns([3, 1])
                 with col1:
-                    st.json(gateway['config'].dict())
+                     # Display config safely
+                    config_dict = gateway['config'].dict()
+                    # Mask sensitive fields if necessary before displaying
+                    if 'password' in config_dict.get('additional_config', {}):
+                        config_dict['additional_config']['password'] = "****"
+                    if 'tyk_auth_secret' in config_dict.get('additional_config', {}):
+                         config_dict['additional_config']['tyk_auth_secret'] = "****"
+                    # Add other sensitive fields as needed
+                    st.json(config_dict)
                 with col2:
                     if st.button("Delete", key=f"delete_{gateway['name']}"):
+                        # Handle certificate deletion if it exists
+                        cert_path_to_delete = gateway['config'].cert_path
                         delete_gateway(gateway['name'])
+                        if cert_path_to_delete and os.path.exists(cert_path_to_delete):
+                            try:
+                                os.remove(cert_path_to_delete)
+                                logger.info(f"Deleted certificate file: {cert_path_to_delete}")
+                            except OSError as e:
+                                logger.error(f"Error deleting certificate file {cert_path_to_delete}: {e}")
                         st.experimental_rerun()
-    
+
     # Add/Edit gateway form
     st.subheader("Add/Edit Gateway")
     
