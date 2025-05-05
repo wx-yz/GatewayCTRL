@@ -16,11 +16,11 @@ Universal Control Plane for API Gateways. A comprehensive API Gateway management
 
 Currently supports the following API Gateway vendors:
 
-*   <img src="https://img.icons8.com/color/16/000000/amazon-web-services.png"/> **AWS API Gateway:** Manage your REST APIs hosted on AWS.
-*   <img src="https://img.icons8.com/color/16/000000/wso2.png"/> **WSO2 API Manager:** Control APIs deployed on WSO2.
-*   <img src="https://img.icons8.com/?size=16&id=36919&format=png&color=000000"/> **Kong Gateway:** Administer services, routes, and plugins in your Kong instances.
-*   <img src="https://gravitee.io/assets/images/favicon.ico" width="16" height="16"/> **Gravitee:** Manage APIs within your Gravitee environments.
-*   <img src="https://tyk.io/wp-content/uploads/2023/06/cropped-Tyk-Favicon-32x32.png" width="16" height="16"/> **Tyk Gateway:** Configure and manage APIs deployed via Tyk.
+*   <img src="static/aws.png" width="24"/> **AWS API Gateway:** Manage your REST APIs hosted on AWS.
+*   <img src="static/wso2.png" width="24"/> **WSO2 API Manager:** Control APIs deployed on WSO2.
+*   <img src="static/kong.png" width="24"/> **Kong Gateway:** Administer services, routes, and plugins in your Kong instances.
+*   <img src="static/gravitee.png" width="24"/> **Gravitee:** Manage APIs within your Gravitee environments.
+*   <img src="static/tyk.png" width="24"/> **Tyk Gateway:** Configure and manage APIs deployed via Tyk.
 *   *(Support for Azure API Management and Google Cloud API Gateway can be added)*
 
 ## 🛠️ Installation & Setup
