@@ -2,13 +2,15 @@
 
 Universal Control Plane for API Gateways. An API Gateway management project providing a central control plane for provisioning, managing, and monitoring multiple API gateways across different vendors.
 
+<img width="1340" alt="gw-dashboard" src="https://github.com/user-attachments/assets/152b03f4-ba3e-47c8-bff7-c22622668daf" />
+
 ## ✨ Features
 
 *   **Centralized Management:** Configure and view all your API gateways from a single interface.
 *   **Multi-Vendor Support:** Seamlessly manage APIs across various gateway providers.
 *   **Pluggable Architecture:** Easily extend support for new gateway types.
-*   **Intuitive Dashboard:** Monitor gateway status and API counts at a glance.
-*   **API Lifecycle Management:** Create, view, update, and delete APIs on supported gateways.
+*   **Intuitive Dashboard:** Monitor gateway status and API counts at a glance (todo).
+*   **API Lifecycle Management:** Create, view, update, and delete APIs on supported gateways (todo).
 *   **Detailed API Views:** Inspect API configurations, routes, plugins, consumers, and analytics (where supported).
 *   **Secure Configuration:** Store gateway credentials securely.
 
