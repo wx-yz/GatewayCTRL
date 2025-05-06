@@ -369,8 +369,6 @@ elif selected_page_name == "Gateway Management":
     if st.session_state.gateways:
         st.markdown("### Existing Gateways")
         for gateway in st.session_state.gateways:
-            st.markdown('<div class="card">', unsafe_allow_html=True)  # Start card div
-
             icon_path = get_gateway_icon(gateway['type'])
             col1, col2, col3 = st.columns([8, 1, 1])  # Adjust column ratios
 
