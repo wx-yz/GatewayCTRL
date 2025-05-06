@@ -1,35 +1,27 @@
 from typing import Dict, Type, List
 from .base import BaseGateway, GatewayConfig
-from .aws import AWSGateway
-from .wso2 import WSO2Gateway
 from .kong import KongGateway
-from .gravitee import GraviteeGateway
-from .tyk import TykGateway # Import the new gateway
+from .wso2 import WSO2Gateway
+from .tyk import TykGateway
+from .gravitee import GraviteeGateway # Import GraviteeGateway
+# Import other gateway types as you create them
+# from .aws import AWSAPIGateway
 
 class GatewayFactory:
-    _gateways: Dict[str, Type[BaseGateway]] = {
-        'aws': AWSGateway,
-        'wso2': WSO2Gateway,
-        'kong': KongGateway,
-        'gravitee': GraviteeGateway,
-        'tyk': TykGateway, # Add Tyk here
-        # Add other gateway implementations here
+    _gateways = {
+        "kong": KongGateway,
+        "wso2": WSO2Gateway,
+        "tyk": TykGateway,
+        "gravitee": GraviteeGateway, # Add Gravitee
+        # "aws": AWSAPIGateway,
     }
 
-    @classmethod
-    def register_gateway(cls, gateway_type: str, gateway_class: Type[BaseGateway]):
-        """Register a new gateway type"""
-        cls._gateways[gateway_type] = gateway_class
-
-    @classmethod
-    def create_gateway(cls, gateway_type: str, config: GatewayConfig) -> BaseGateway:
-        """Create a gateway instance of the specified type"""
-        gateway_class = cls._gateways.get(gateway_type)
+    @staticmethod
+    def create_gateway(gateway_type: str, config: GatewayConfig) -> BaseGateway:
+        gateway_class = GatewayFactory._gateways.get(gateway_type.lower())
         if not gateway_class:
-            raise ValueError(f"Unknown gateway type: {gateway_type}")
+            raise ValueError(f"Unsupported gateway type: {gateway_type}")
         return gateway_class(config)
 
-    @classmethod
-    def get_available_gateways(cls) -> List[str]:
-        """Get list of available gateway types"""
-        return list(cls._gateways.keys())
+    # Removed get_supported_types as it was causing issues.
+    # The UI now directly uses _gateways.keys()

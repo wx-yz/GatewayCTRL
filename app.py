@@ -10,7 +10,7 @@ from swagger_ui_bundle import swagger_ui_path
 import pathlib
 import shutil
 import base64
-from database import Database
+from database import Database, SENSITIVE_KEYS  # Import the list of sensitive keys
 import time
 from functools import lru_cache
 import psutil
@@ -189,18 +189,23 @@ elif selected_page_name == "Gateway Management":
     st.markdown("Add, configure, and remove API Gateway connections.")
 
     # --- Determine which gateway to edit (if any) ---
-    # Check if an edit button was clicked in the previous run
     gateway_name_to_edit_from_button = st.session_state.get('editing_gateway_name')
     default_selectbox_index = 0
-    if gateway_name_to_edit_from_button:
+
+    # --- MODIFICATION START ---
+    # Check if a form reset was requested from the previous run
+    if st.session_state.get('form_reset_requested'):
+        default_selectbox_index = 0 # Force index to 0 ("<New Gateway>")
+        del st.session_state.form_reset_requested # Clear the flag
+    # --- MODIFICATION END ---
+    elif gateway_name_to_edit_from_button: # Only check edit button if reset wasn't requested
         try:
             # Find the index of the gateway clicked for editing
             gateway_names_list = ["<New Gateway>"] + [g['name'] for g in st.session_state.gateways]
             default_selectbox_index = gateway_names_list.index(gateway_name_to_edit_from_button)
         except ValueError:
-            # Gateway might have been deleted in another session/tab, default to New
-            pass
-        # Clear the state variable after using it
+            pass # Gateway might have been deleted, default to New
+        # Clear the edit state variable after using it
         del st.session_state['editing_gateway_name']
 
     # --- Add/Edit Gateway Form ---
@@ -214,7 +219,7 @@ elif selected_page_name == "Gateway Management":
         selected_gateway_name_to_edit = st.selectbox(
             "Select Gateway to Edit or Add New",
             gateway_names,
-            index=default_selectbox_index, # Set default based on edit button click
+            index=default_selectbox_index, # Set default based on edit button OR reset flag
             key="gw_edit_select"
         )
 
@@ -251,7 +256,45 @@ elif selected_page_name == "Gateway Management":
             username = st.text_input("Username", value=gateway_to_edit['config'].additional_config.get('username', '') if gateway_to_edit else "", key="gw_wso2_user")
             password = st.text_input("Password", type="password", value=gateway_to_edit['config'].additional_config.get('password', '') if gateway_to_edit else "", key="gw_wso2_pass")
             additional_config = {'username': username, 'password': password}
-        # ... (Add unique keys like key="gw_kong_key", key="gw_tyk_secret" etc. for other gateway types) ...
+        elif gateway_type == 'tyk':
+            tyk_auth_secret = st.text_input(
+                "Tyk Authorization Secret (X-Tyk-Authorization)",
+                type="password",
+                value=gateway_to_edit['config'].additional_config.get('tyk_auth_secret', '') if gateway_to_edit else "",
+                key="gw_tyk_secret",
+                help="The secret key used for the X-Tyk-Authorization header."
+            )
+            additional_config = {'tyk_auth_secret': tyk_auth_secret}
+        elif gateway_type == 'gravitee':
+            gravitee_org_id = st.text_input(
+                "Gravitee Organization ID",
+                value=gateway_to_edit['config'].additional_config.get('gravitee_organization_id', 'DEFAULT') if gateway_to_edit else 'DEFAULT',
+                key="gw_gravitee_org_id",
+                help="The Gravitee Organization ID. Defaults to 'DEFAULT'."
+            )
+            gravitee_env_id = st.text_input(
+                "Gravitee Environment ID",
+                value=gateway_to_edit['config'].additional_config.get('gravitee_environment_id', 'DEFAULT') if gateway_to_edit else 'DEFAULT',
+                key="gw_gravitee_env_id",
+                help="The Gravitee Environment ID. Defaults to 'DEFAULT'."
+            )
+            gravitee_username = st.text_input(
+                "Gravitee Username",
+                value=gateway_to_edit['config'].additional_config.get('gravitee_username', '') if gateway_to_edit else "",
+                key="gw_gravitee_user"
+            )
+            gravitee_password = st.text_input(
+                "Gravitee Password",
+                type="password",
+                value=gateway_to_edit['config'].additional_config.get('gravitee_password', '') if gateway_to_edit else "",
+                key="gw_gravitee_pass"
+            )
+            additional_config = {
+                'gravitee_organization_id': gravitee_org_id,
+                'gravitee_environment_id': gravitee_env_id,
+                'gravitee_username': gravitee_username,
+                'gravitee_password': gravitee_password
+            }
 
         # Add/Update Button
         if st.button("💾 Save Gateway Configuration"):
@@ -303,49 +346,84 @@ elif selected_page_name == "Gateway Management":
                                 db.add_gateway(config.name, gateway_type, config)
                                 st.success(f"Gateway '{config.name}' added successfully!")
 
-                            # Update session state and rerun
+                            # Update session state
                             st.session_state.gateways = db.get_gateways()
+
+                            # --- MODIFICATION START ---
+                            # Remove the direct modification:
+                            # st.session_state.gw_edit_select = "<New Gateway>"
+
+                            # Set a flag to indicate reset is needed on the next run
+                            st.session_state.form_reset_requested = True
+                            # --- MODIFICATION END ---
+
                             time.sleep(1) # Brief pause
-                            st.rerun() # Use st.rerun() instead of experimental_rerun
+                            st.rerun() # Rerun the app
                         else:
                             st.error("Connection test failed. Please check configuration and network.")
                 except Exception as e:
                     logger.error(f"Error saving/testing gateway {gateway_name}: {e}", exc_info=True)
                     st.error(f"Failed to save gateway: {e}")
 
-        # st.markdown('</div>', unsafe_allow_html=True) # Assuming card style is applied by container or CSS
-
     # --- List Existing Gateways ---
     if st.session_state.gateways:
         st.markdown("### Existing Gateways")
         for gateway in st.session_state.gateways:
-            # st.markdown('<div class="card">', unsafe_allow_html=True) # Start card div
+            st.markdown('<div class="card">', unsafe_allow_html=True)  # Start card div
 
             icon_path = get_gateway_icon(gateway['type'])
-            col1, col2, col3 = st.columns([8, 1, 1]) # Adjust column ratios
+            col1, col2, col3 = st.columns([8, 1, 1])  # Adjust column ratios
 
             with col1:
                 st.markdown(f"#### ![vendorlogo](/app/{icon_path}) {gateway['name']}")
                 st.caption(f"Type: {gateway['type'].upper()} | URL: {gateway['config'].url}")
+
+                # --- Modified View Configuration Expander ---
                 with st.expander("View Configuration"):
-                    # Use model_dump() instead of dict()
                     config_dict = gateway['config'].model_dump()
-                    # Mask sensitive fields before displaying
-                    if 'password' in config_dict.get('additional_config', {}):
-                        config_dict['additional_config']['password'] = "****"
-                    if 'tyk_auth_secret' in config_dict.get('additional_config', {}):
-                         config_dict['additional_config']['tyk_auth_secret'] = "****"
-                    if 'aws_secret_access_key' in config_dict.get('additional_config', {}):
-                         config_dict['additional_config']['aws_secret_access_key'] = "****"
-                    st.json(config_dict)
 
-            with col2: # Edit Button Column
-                 edit_key = f"edit_{gateway['name']}"
-                 if st.button("✏️", key=edit_key, help=f"Edit {gateway['name']}"):
-                     st.session_state['editing_gateway_name'] = gateway['name']
-                     st.rerun() # Use st.rerun() instead of experimental_rerun
+                    # Display non-sensitive fields first
+                    st.text(f"Name: {config_dict.get('name')}")
+                    st.text(f"URL: {config_dict.get('url')}")
+                    st.text(f"Verify SSL: {config_dict.get('verify_ssl')}")
+                    cert_display = os.path.basename(config_dict.get('cert_path')) if config_dict.get('cert_path') else "None"
+                    st.text(f"Certificate Path: {cert_display}")
 
-            with col3: # Delete Button Column
+                    st.markdown("###### Additional Configuration")
+                    additional_config = config_dict.get('additional_config', {})
+                    if not additional_config:
+                        st.caption("None")
+                    else:
+                        for key, value in additional_config.items():
+                            if key in SENSITIVE_KEYS and isinstance(value, str):
+                                # Handle sensitive fields with show/hide
+                                state_key = f"show_{gateway['name']}_{key}"
+                                if state_key not in st.session_state:
+                                    st.session_state[state_key] = False  # Default to hidden
+
+                                c1, c2 = st.columns([3, 1])  # Column for value, column for button
+                                with c1:
+                                    display_value = value if st.session_state[state_key] else "****"
+                                    # Use disabled text_input for consistent alignment and copy-paste
+                                    st.text_input(f"{key}:", value=display_value, key=f"disp_{gateway['name']}_{key}", disabled=True)
+                                with c2:
+                                    button_label = "Hide" if st.session_state[state_key] else "Show"
+                                    button_key = f"btn_{gateway['name']}_{key}"
+                                    if st.button(button_label, key=button_key):
+                                        st.session_state[state_key] = not st.session_state[state_key]
+                                        st.rerun()  # Rerun to update the display
+                            else:
+                                # Display non-sensitive additional config directly
+                                st.text(f"{key}: {value}")
+                # --- End Modified View Configuration Expander ---
+
+            with col2:  # Edit Button Column
+                edit_key = f"edit_{gateway['name']}"
+                if st.button("✏️", key=edit_key, help=f"Edit {gateway['name']}"):
+                    st.session_state['editing_gateway_name'] = gateway['name']
+                    st.rerun()
+
+            with col3:  # Delete Button Column
                 delete_key = f"delete_{gateway['name']}"
                 if st.button("🗑️", key=delete_key, help=f"Delete {gateway['name']}"):
                     cert_path_to_delete = gateway['config'].cert_path
@@ -359,9 +437,9 @@ elif selected_page_name == "Gateway Management":
                     st.session_state.gateways = db.get_gateways()
                     st.success(f"Gateway '{gateway['name']}' deleted.")
                     time.sleep(1)
-                    st.rerun() # Use st.rerun() instead of experimental_rerun
+                    st.rerun()  # Use st.rerun() instead of experimental_rerun
 
-            st.markdown('</div>', unsafe_allow_html=True) # End card div
+            st.markdown('</div>', unsafe_allow_html=True)  # End card div
 
 elif selected_page_name == "API Management":
     st.title("🌐 API Management")

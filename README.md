@@ -135,6 +135,69 @@ To extend support for a new API gateway vendor:
     *   Add an `elif gateway_type == 'new_gateway_key':` block in the "Gateway Management" section ([`app.py`](app.py)) to handle the specific configuration fields required for your new gateway.
     *   Add a corresponding `elif` block in the "API Management" section ([`app.py`](app.py)) to display and manage APIs for the new gateway type, tailoring the UI to the features and data provided by its API.
 
+## Security: Encrypting Gateway Credentials
+
+GatewayCTRL can encrypt sensitive configuration fields (like passwords, API keys, secrets) before storing them in the database. This adds a layer of security to protect your credentials.
+
+**Dependencies:**
+
+*   This feature requires the `cryptography` library:
+    ```bash
+    pip install cryptography
+    ```
+
+**Configuration Steps:**
+
+1.  **Generate an Encryption Key:**
+    *   Run the following Python command in your terminal (ensure your virtual environment is active):
+        ```bash
+        python -c "from cryptography.fernet import Fernet; print(f'GATEWAYCTRL_ENCRYPTION_KEY={Fernet.generate_key().decode()}')"
+        ```
+    *   This will output a line similar to:
+        `GATEWAYCTRL_ENCRYPTION_KEY=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_abc=`
+    *   **Copy this entire line (`GATEWAYCTRL_ENCRYPTION_KEY=...`). This is your unique encryption key.** Keep it safe and do not commit it directly into your source code.
+
+2.  **Set the Environment Variable:**
+    *   You need to make this key available to the GatewayCTRL application as an environment variable named `GATEWAYCTRL_ENCRYPTION_KEY`. How you set this depends on your operating system and how you run the app:
+        *   **Linux/macOS (temporary for current session):**
+            ```bash
+            export GATEWAYCTRL_ENCRYPTION_KEY="YOUR_GENERATED_KEY_HERE"
+            streamlit run app.py
+            ```
+            *(Replace `"YOUR_GENERATED_KEY_HERE"` with the actual key you generated, including the `GATEWAYCTRL_ENCRYPTION_KEY=` part if you copied the whole line, or just the key part if you only copied that)*
+        *   **Windows (Command Prompt - temporary):**
+            ```cmd
+            set GATEWAYCTRL_ENCRYPTION_KEY=YOUR_GENERATED_KEY_HERE
+            streamlit run app.py
+            ```
+        *   **Windows (PowerShell - temporary):**
+            ```powershell
+            $env:GATEWAYCTRL_ENCRYPTION_KEY = "YOUR_GENERATED_KEY_HERE"
+            streamlit run app.py
+            ```
+        *   **.env File:** Create a file named `.env` in the project's root directory and add the line you copied:
+            ```dotenv
+            # .env
+            GATEWAYCTRL_ENCRYPTION_KEY=aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789-_abc=
+            ```
+            GatewayCTRL uses `python-dotenv` to automatically load this file on startup. Ensure `.env` is listed in your `.gitignore` file.
+        *   **Deployment Environment:** If deploying (e.g., Docker, cloud service), use your platform's mechanism for setting environment variables securely.
+
+3.  **Run GatewayCTRL:**
+    *   Start the application as usual (`streamlit run app.py`). It will detect the environment variable and enable encryption. If the variable is not set, a warning will be logged, and credentials will be stored unencrypted.
+
+**How it Works:**
+
+*   When you add or update a gateway configuration, fields listed in the `SENSITIVE_KEYS` list within `database.py` (e.g., `password`, `aws_secret_access_key`) are automatically encrypted using the provided key before being saved.
+*   When configurations are loaded for display or use, these fields are decrypted.
+*   In the UI, sensitive fields are masked by default ("****") in the "View Configuration" section, with a "Show" button to reveal the decrypted value temporarily.
+
+**Important Notes:**
+
+*   **Existing Data:** Gateways saved *before* setting the encryption key will remain unencrypted in the database. To encrypt them, you must edit and re-save them through the GatewayCTRL UI after setting the key.
+*   **Key Management:** Losing the encryption key means you will **not** be able to decrypt the stored credentials. Keep your key secure and backed up.
+*   **Custom Sensitive Fields:** If your specific gateway types use different sensitive field names in `additional_config`, you may need to add those names to the `SENSITIVE_KEYS` list in `database.py`.
+
 ## 🙌 Contributing
 
 Contributions are welcome! Please feel free to fork the repository, make changes, and submit a Pull Request.
